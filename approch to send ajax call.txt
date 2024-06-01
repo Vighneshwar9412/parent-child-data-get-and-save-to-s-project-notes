@@ -1,0 +1,483 @@
+ALTER PROCEDURE UDP_R_CRUDLearnForm
+(
+ @Id INT=0,
+ @Name VARCHAR(50)='',
+ @MobileNo VARCHAR(10)='',
+ @Mode CHAR(1)/*I= INSERT, U=Update, S=Select, D=Delete*/
+)
+AS
+BEGIN
+  IF(@Mode='I')
+  BEGIN
+    INSERT INTO tblLearform(Name,MobileNo) VALUES(@Name,@MobileNo)
+  END
+  IF(@Mode='U')
+  BEGIN
+    UPDATE tblLearform SET Name=@Name,MobileNo=@MobileNo WHERE Id=@Id
+  END
+  IF(@Mode='S')
+  BEGIN
+    SELECT * FROM tblLearform
+  END
+  IF(@Mode='D')
+  BEGIN
+      DELETE FROM tblLearform WHERE Id=@Id
+  END
+
+END
+
+/********************************/
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Data;
+using System.Web.Services;
+using Newtonsoft.Json;
+
+namespace ParentChildForm
+{
+    public partial class LearnForm : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+
+        }
+        [WebMethod]
+        public static int Save(string name, string mobileno)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            int st = 0;
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Name", name);
+            cmd.Parameters.AddWithValue("@MobileNo", mobileno);
+            cmd.Parameters.AddWithValue("@Mode", "I");
+            st=cmd.ExecuteNonQuery();
+            con.Close();
+            return st;
+        }
+        [WebMethod]
+        public static int Update(string name, string mobileno, int id)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            int st = 0;
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@Name", name);
+            cmd.Parameters.AddWithValue("@MobileNo", mobileno);
+            cmd.Parameters.AddWithValue("@Mode", "U");
+            st = cmd.ExecuteNonQuery();
+            con.Close();
+            return st;
+        }
+        [WebMethod]
+        public static int Delete(int id)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            int st = 0;
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@Mode", "D");
+            st = cmd.ExecuteNonQuery();
+            con.Close();
+            return st;
+        }
+        [WebMethod]
+        public static string SelectData()
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            string st = "";
+
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Mode","S");
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            con.Close();
+            if (ds.Tables[0].Rows.Count > 0)
+            {
+                st = JsonConvert.SerializeObject(ds.Tables, Newtonsoft.Json.Formatting.Indented);
+            }
+            
+            return st;
+        }
+        [WebMethod]
+        public static string SelectDataForEdit(int Id)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            string st ="";
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", Id);
+            cmd.Parameters.AddWithValue("@Mode", "S");
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            con.Close();
+            if (ds.Tables[0].Rows.Count > 0)
+            {
+                st = JsonConvert.SerializeObject(ds.Tables, Newtonsoft.Json.Formatting.Indented);
+            }
+            else
+            {
+                st = JsonConvert.SerializeObject("No Records Found", Newtonsoft.Json.Formatting.Indented);
+            }
+            return st;
+        }
+    }
+}
+
+
+/*****************************/
+<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="LearnForm.aspx.cs" Inherits="ParentChildForm.LearnForm" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title></title>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js" type="text/javascript"></script>
+</head>
+<body>
+    <form id="form1" runat="server">
+        <input type="hidden" id="hdnId" value="0" />
+        <div>
+            <table>
+                <tr>
+                    <td>
+                        <label>Name</label>
+                    </td>
+                    <td>
+                        <input type="text" id="txtname" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <label>Mobile No.</label>
+                    </td>
+                    <td>
+                        <input type="text" id="txtmobileno" />
+                    </td>
+                </tr>
+
+                <tr>
+                    <td></td>
+                    <td>
+                        <input type="button" id="btnSave" value="Save" onclick="Save()" />
+                    </td>
+                </tr>
+            </table>
+
+        </div>
+        <div>
+            <table id="tblData" border="1">
+                <thead>
+                    <tr>
+                        <th>Sr.No.</th>
+                        <th>Name</th>
+                        <th>Mobile</th>
+                         <th></th>
+                         <th></th>
+                    </tr>
+                </thead>
+                <tbody id="tbData">
+
+                </tbody>
+            </table>
+        </div>
+    </form>
+
+    <script>
+        $(document).ready(function () {
+            SelectData();
+        })
+
+        function Save() {
+            var name = $("#txtname").val();
+            var mobileno = $("#txtmobileno").val();
+
+            if ($("#btnSave").val() == "Save") {
+                $.ajax({
+                    type: "POST",
+                    url: "LearnForm.aspx/Save",
+                    data: '{name:"' + name + '",mobileno:"' + mobileno + '"}',
+                    contentType: "application/json;charset=utf-8",
+                    dataType: "json",
+                    success: function (r) {
+                        var result = 0;
+                        result = JSON.parse(r.d);
+                        if (parseInt(result) > 0) {
+                            SelectData();
+                            alert("Data Saved successfully");
+                            $("#txtname").val('');
+                            $("#txtmobileno").val('');
+
+                        }
+                        else {
+                            alert("Someyhing went wrong!!!");
+                        }
+                    },
+                    error: function (request, status, error) {
+                        alert("Someyhing went wrong!!!");
+                    }
+                });
+            }
+            else {
+                var Id = $("#hdnId").val();
+                $.ajax({
+                    type: "POST",
+                    url: "LearnForm.aspx/Update",
+                    data: '{name:"' + name + '",mobileno:"' + mobileno + '",id:' + Id + '}',
+                    contentType: "application/json;charset=utf-8",
+                    dataType: "json",
+                    success: function (r) {
+                        var result = 0;
+                        result = JSON.parse(r.d);
+                        if (parseInt(result) > 0) {
+                            SelectData();
+                            alert("Data Updated successfully");
+                            $("#txtname").val('');
+                            $("#txtmobileno").val('');
+                            $("#btnSave").val("Save");
+                        }
+                        else {
+                            alert("Someyhing went wrong!!!");
+                        }
+                    },
+                    error: function (request, status, error) {
+                        alert("Someyhing went wrong!!!");
+                    }
+                });
+            }
+        }
+
+        function Delete(Id) {
+            var name = $("#txtname").val();
+            var mobileno = $("#txtmobileno").val();
+
+
+            $.ajax({
+                type: "POST",
+                url: "LearnForm.aspx/Delete",
+                data: '{id:' + Id + '}',
+                contentType: "application/json;charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var result = 0;
+                    result = JSON.parse(r.d);
+                    if (parseInt(result) > 0) {
+                        SelectData();
+                        alert("Data Deleted successfully");
+                    }
+                    else {
+                        alert("Someyhing went wrong!!!");
+                    }
+                },
+                error: function (request, status, error) {
+                    alert("Someyhing went wrong!!!");
+                }
+            });
+        }
+
+        function SelectData() {
+            $.ajax({
+                type: "POST",
+                url: "LearnForm.aspx/SelectData",
+                data: '{}',
+                contentType: "application/json;charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var result = 0;
+                    result = JSON.parse(r.d);
+                    result = result[0];
+                    $("#tbData").empty();
+                    if (result!='') {
+                        for (var i = 0; i < result.length; i++) {
+                            row = '<tr>';
+                            row = row + '<td style="text-align:center;">' + parseInt(i + 1) + '</td>';
+                            row = row + '<td>' + result[i]["Name"] + '</td>';
+                            row = row + '<td>' + result[i]["MobileNo"] + '</td>';
+                            row = row + '<td><input type="button" onclick="SelectDataForEdit(' + result[i]["Id"] + ')" value="Edit")"/></td>';
+                            row = row + '<td><input type="button" onclick="Delete(' + result[i]["Id"] + ')" value="Delete"/></td>';
+                            row = row + '</tr>';
+
+                            $("#tbData").append(row);
+                        }
+                    }
+                    else {
+                        alert("Someyhing went wrong!!!");
+                    }
+                },
+                error: function (request, status, error) {
+                    alert("Someyhing went wrong!!!");
+                }
+            });
+        }
+
+        function SelectDataForEdit(Id) {
+            $("#hdnId").val(Id);
+            $.ajax({
+                type: "POST",
+                url: "LearnForm.aspx/SelectDataForEdit",
+                data: '{Id:' + Id + '}',
+                contentType: "application/json;charset=utf-8",
+                dataType: "json",
+                success: function (r) {
+                    var result = 0;
+                    result = JSON.parse(r.d);
+                    result = result[0];
+                    if (result!='') {
+                        $("#txtname").val(result[0]["Name"]);
+                        $("#txtmobileno").val(result[0]["MobileNo"]);
+                        $("#btnSave").val("Update");
+
+                    }
+                    else {
+                        alert("Someyhing went wrong!!!");
+                    }
+                },
+                error: function (request, status, error) {
+                    alert("Someyhing went wrong!!!");
+                }
+            });
+        }
+    </script>
+</body>
+</html>
+
+/****************************/
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Data;
+using System.Web.Services;
+using Newtonsoft.Json;
+
+namespace ParentChildForm
+{
+    public partial class LearnForm : System.Web.UI.Page
+    {
+        protected void Page_Load(object sender, EventArgs e)
+        {
+
+        }
+        [WebMethod]
+        public static int Save(string name, string mobileno)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            int st = 0;
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Name", name);
+            cmd.Parameters.AddWithValue("@MobileNo", mobileno);
+            cmd.Parameters.AddWithValue("@Mode", "I");
+            st=cmd.ExecuteNonQuery();
+            con.Close();
+            return st;
+        }
+        [WebMethod]
+        public static int Update(string name, string mobileno, int id)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            int st = 0;
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@Name", name);
+            cmd.Parameters.AddWithValue("@MobileNo", mobileno);
+            cmd.Parameters.AddWithValue("@Mode", "U");
+            st = cmd.ExecuteNonQuery();
+            con.Close();
+            return st;
+        }
+        [WebMethod]
+        public static int Delete(int id)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            int st = 0;
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.Parameters.AddWithValue("@Mode", "D");
+            st = cmd.ExecuteNonQuery();
+            con.Close();
+            return st;
+        }
+        [WebMethod]
+        public static string SelectData()
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            string st = "";
+
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Mode","S");
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            con.Close();
+            if (ds.Tables[0].Rows.Count > 0)
+            {
+                st = JsonConvert.SerializeObject(ds.Tables, Newtonsoft.Json.Formatting.Indented);
+            }
+            
+            return st;
+        }
+        [WebMethod]
+        public static string SelectDataForEdit(int Id)
+        {
+            string conn = ConfigurationManager.ConnectionStrings["connection"].ConnectionString;
+            string st ="";
+            SqlConnection con = new SqlConnection(conn);
+            con.Open();
+            SqlCommand cmd = new SqlCommand("UDP_R_CRUDLearnForm", con);
+            cmd.CommandType = CommandType.StoredProcedure;
+            cmd.Parameters.AddWithValue("@Id", Id);
+            cmd.Parameters.AddWithValue("@Mode", "S");
+            SqlDataAdapter da = new SqlDataAdapter(cmd);
+            DataSet ds = new DataSet();
+            da.Fill(ds);
+            con.Close();
+            if (ds.Tables[0].Rows.Count > 0)
+            {
+                st = JsonConvert.SerializeObject(ds.Tables, Newtonsoft.Json.Formatting.Indented);
+            }
+            else
+            {
+                st = JsonConvert.SerializeObject("No Records Found", Newtonsoft.Json.Formatting.Indented);
+            }
+            return st;
+        }
+    }
+}
